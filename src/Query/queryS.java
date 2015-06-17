@@ -12,7 +12,7 @@ import java.util.ArrayList;
  * @author MyPC
  */
 public class queryS implements java.io.Serializable{
-    public enum methodS{ATM, USER, TRADE};
+    public enum methodS{ATM, USER, TRADE, UPDATE};
     public methodS type;
     private String id;
     

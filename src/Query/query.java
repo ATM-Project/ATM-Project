@@ -12,7 +12,7 @@ import java.util.ArrayList;
  * @author MyPC
  */
 public class query implements java.io.Serializable{
-    public enum method{DEPOSIT, WITHDRAW, TRANSFORM, UPDATE, LOOKUP};
+    public enum method{DEPOSIT, WITHDRAW, TRANSFORM, LOOKUP};
     public method type;
     
     private boolean status;
@@ -24,10 +24,11 @@ public class query implements java.io.Serializable{
     
     public query(method type){
         this.type = method.LOOKUP;
+        this.amount = "null";
     }
     
     public query(method type, String num){
-        this.type = type;//DEPOSIT OR WITHDRAW
+        this.type = type;//DEPOSIT OR WITHDRAW OR UPDATE
         this.amount = num;
     }
     

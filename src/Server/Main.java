@@ -64,7 +64,7 @@ public class Main{
                 String ipAdd = socket.getInetAddress().getHostAddress();
                 if (judge(socket)){
                     count++;
-                    System.out.println("Link"+count+"Start");
+                    System.out.println("Link  "+zeroFill(count)+"  Start");
                     linkPool.add(socket);
                     Service tmp = new Service(server.accept(), zeroFill(count));
                     threadPool.execute(tmp);

@@ -14,12 +14,12 @@ public class register implements java.io.Serializable{
     private boolean status;
     private String msg;
     
-    register(String name, String pwd){
+    public register(String name, String pwd){
         this.name = name;
         this.pwd = pwd;
     }
     
-    register(boolean status, String msg){
+    public register(boolean status, String msg){
         this.status = status;
         this.msg = msg;
     }

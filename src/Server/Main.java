@@ -71,7 +71,7 @@ public class Main{
                 }
                 else{
                     ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-                    output.writeObject(new query(false, "RUNTIMEERROR"));   output.flush();
+                    output.writeObject(new query(false, "RUNTIME_ERROR"));   output.flush();
                     socket.close();   
                 }
                 

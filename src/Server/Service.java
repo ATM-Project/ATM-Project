@@ -26,6 +26,7 @@ import Query.*;
 import Query.query.method;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import static security.Security.encrypt;
@@ -109,6 +110,9 @@ public class Service implements Runnable{
         else if(order instanceof Logout){
             check_logout();//DONE
         }
+        else {
+            check_error();//DONE
+        }
     }
     
     private void check_login(login order){
@@ -172,7 +176,7 @@ public class Service implements Runnable{
     
     
     private void check_query(query order){
-        query data = order;
+        query data = order; Date time = new Date();
         double money = Double.parseDouble(new String(decrypty(data.getAmount())));
         
         DBCollection users = db.getCollection("users");
@@ -185,12 +189,44 @@ public class Service implements Runnable{
         DBObject client = clients.findOne(clientQ);
         
         try{
+            
+            
             if (data.type == method.DEPOSIT){
-                users.findOne(user);
-            }
-            else if (data.type == method.WITHDRAW){
+                double user_money = Double.parseDouble(new String(decrypty(user.get("money").toString())));
+                double client_money = Double.parseDouble(new String(decrypty(client.get("money").toString())));
+                user_money -= money;    client_money -= money;
+                String user_money_tmp = encrypt(user_money+""); String client_money_tmp = encrypt(client_money+"");
+                String user_tmp = "-"+money;
                 
+                users.update(userQ, new BasicDBObject().append("$set", new BasicDBObject().append("money", user_money_tmp)));
+                records.insert(new BasicDBObject().append("ipAddr",this.ipAddr).append("serial", this.serialNum)
+                                    .append("name", userQ.getString("name")).append("type", "TRANSFORM").append("delta", user_tmp)
+                                    .append("remains",user_money_tmp).append("time", formatter.format(time)));
+                clients.update(new BasicDBObject().append("ipAddr", ipAddr), 
+                                    new BasicDBObject().append("$set", new BasicDBObject().append("money", client_money_tmp)));
+                
+                output.writeObject(new query(true,"")); output.flush();
             }
+            
+            
+            else if (data.type == method.WITHDRAW){
+                double user_money = Double.parseDouble(new String(decrypty(user.get("money").toString())));
+                double client_money = Double.parseDouble(new String(decrypty(client.get("money").toString())));
+                user_money -= money;    client_money -= money;
+                String user_money_tmp = encrypt(user_money+""); String client_money_tmp = encrypt(client_money+"");
+                String user_tmp = "-"+money;
+                
+                users.update(userQ, new BasicDBObject().append("$set", new BasicDBObject().append("money", user_money_tmp)));
+                records.insert(new BasicDBObject().append("ipAddr",this.ipAddr).append("serial", this.serialNum)
+                                    .append("name", userQ.getString("name")).append("type", "TRANSFORM").append("delta", user_tmp)
+                                    .append("remains",user_money_tmp).append("time", formatter.format(time)));
+                clients.update(new BasicDBObject().append("ipAddr", ipAddr), 
+                                    new BasicDBObject().append("$set", new BasicDBObject().append("money", client_money_tmp)));
+                
+                output.writeObject(new query(true,"")); output.flush();
+            }
+            
+            
             else if (data.type == method.TRANSFORM){
                 BasicDBObject targetQ = new BasicDBObject().append("name", "");
                 DBObject target = users.findOne(targetQ);
@@ -198,12 +234,12 @@ public class Service implements Runnable{
                     output.writeObject(new query(false, "NO_SUCH_USER")); output.flush();
                 }
                 else{
-                    Date time = new Date();
                     double user_money = Double.parseDouble(new String(decrypty(user.get("money").toString())));
                     double target_money = Double.parseDouble(new String(decrypty(target.get("money").toString())));
                     double client_money = Double.parseDouble(new String(decrypty(client.get("money").toString())));
                     target_money += money;  user_money -= money;    client_money -= money;
                     String target_money_tmp = encrypt(target_money+""); String user_money_tmp = encrypt(user_money+"");
+                    String client_money_tmp = encrypt(client_money+"");
                     String target_tmp = "+"+money; String user_tmp = "-"+money;
                     
                     users.update(userQ, new BasicDBObject().append("$set", new BasicDBObject().append("money", user_money_tmp)));
@@ -215,15 +251,26 @@ public class Service implements Runnable{
                                     .append("name", targetQ.getString("name")).append("type", "TRANSFORM").append("delta", target_tmp)
                                     .append("remains",target_money_tmp).append("time", formatter.format(time)));
                     clients.update(new BasicDBObject().append("ipAddr", ipAddr), 
-                                    new BasicDBObject().append("$set", new BasicDBObject().append("money", client_money+"")));
+                                    new BasicDBObject().append("$set", new BasicDBObject().append("money", client_money_tmp)));
                     
                     output.writeObject(new query(true,"")); output.flush();
                 }
             }
+            
+            
             else if (data.type == method.LOOKUP){
                 DBCursor cursor = records.find(userQ);
-                
+                ArrayList<tradeD> details = new ArrayList<tradeD>();
+                while(cursor.hasNext()){
+                    DBObject tmp = cursor.next();
+                    tradeD obj = new tradeD(tmp.get("serial").toString(), tmp.get("ipAddr").toString(), tmp.get("name").toString(),
+                                     tmp.get("type").toString(), tmp.get("delta").toString(), tmp.get("remains").toString(),
+                                     tmp.get("time").toString());
+                    details.add(obj);
+                }
+                output.writeObject(new query(true, "", details));   output.flush();
             }
+            
         }
         catch (IOException ex) {
                     Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
@@ -237,6 +284,14 @@ public class Service implements Runnable{
         DBCollection users = db.getCollection("users");
         users.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("checked", false)));
         this.currentUser = null;
+    }
+    
+    private void check_error(){
+        try {
+            output.writeObject(new String("WTF!")); output.flush();
+        } catch (IOException ex) {
+            Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override

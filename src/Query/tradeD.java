@@ -14,14 +14,14 @@ import java.text.SimpleDateFormat;
 public class tradeD implements java.io.Serializable{
     //"yyyy-MM-dd HH:mm:ss"
     //public static final SimpleDateFormat dFormat = new SimpleDateFormat("yyyyMMdd");
+    private String atmNo, ipAddr;
+    private String name, method, delta, remains;
     private String tDate;
-    private String atmNo;
-    private String method, amount, remains;
     
-    tradeD(String date, String no, String method, String amount, String remains){
-        this.tDate = date;  this.atmNo = no;
-        this.method = method;   this.amount = amount;
-        this.remains = remains;
+    public tradeD(String no, String ipAddr, String name, String method, String delta, String remains, String date){
+        this.atmNo = no;    this.ipAddr = ipAddr;   
+        this.name = name; this.method = method;   this.delta = delta;   this.remains = remains;
+        this.tDate = date;  
     }
     
     public String getDate(){
@@ -33,8 +33,8 @@ public class tradeD implements java.io.Serializable{
     public String getMethod(){
         return this.method;
     }
-    public String getAmount(){
-        return this.amount;
+    public String getDelta(){
+        return this.delta;
     }
     public String getRemain(){
         return this.remains;

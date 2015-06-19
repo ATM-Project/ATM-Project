@@ -76,6 +76,8 @@ public class ClientS extends javax.swing.JFrame {
                 new ClientS().setVisible(true);
             }
         });
+        
+        /*Socket Established*/
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

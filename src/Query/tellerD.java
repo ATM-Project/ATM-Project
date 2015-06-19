@@ -5,6 +5,8 @@
  */
 package Query;
 
+import Query.*;
+
 /**
  *
  * @author MyPC

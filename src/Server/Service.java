@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import Query.*;
 import Query.query.method;
+import Query.queryS.methodS;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -50,30 +51,39 @@ public class Service implements Runnable{
     private BasicDBObject currentUser = null;
     
     Service(Socket socket, String serialNum){
+        System.out.println(socket);
         this.connection = socket;
         this.serialNum = serialNum;
         this.ipAddr = socket.getInetAddress().getHostAddress();
-        addClient();
+        this.DBConnect();
+        this.addClient();
         
         try{
-            connection.setSoTimeout(30000);
+            //connection.setSoTimeout(30000);
             input = new ObjectInputStream(socket.getInputStream());
             output = new ObjectOutputStream(socket.getOutputStream());
         }
         catch(IOException e){
-            e.printStackTrace();
+            //e.printStackTrace();
             this.DBShutdown();
-            System.exit(1);
         }
     }
     
     private void addClient(){
-        DBCollection client = db.getCollection("clients");
-        DBObject obj = client.findOne(new BasicDBObject().append("ipAddr", this.ipAddr));
-        if (obj == null){
-            BasicDBObject newObj = new BasicDBObject().append("ipAddr", this.ipAddr).append("SerialNum", this.serialNum).
-                                        append("money", encrypt("100000"));
-            client.insert(newObj);
+        try{
+            DBCollection client = db.getCollection("clients");
+            DBObject obj = client.findOne(new BasicDBObject().append("ipAddr", this.ipAddr));
+            if (obj == null){
+                BasicDBObject newObj = new BasicDBObject().append("ipAddr", this.ipAddr).append("SerialNum", this.serialNum).
+                                        append("money", encrypt("100000")).append("currentUser", "null");
+                client.insert(newObj);
+            }
+            else{
+                this.serialNum = obj.get("SerialNum").toString();
+            }
+        }
+        catch(java.lang.NullPointerException e){
+            e.printStackTrace();
         }
     }
     
@@ -91,7 +101,15 @@ public class Service implements Runnable{
     
     private void DBShutdown(){
         mongo.close();
-        System.exit(1);
+        try {
+            //this.connection.getInputStream().close();
+            //this.connection.getOutputStream().close();
+            this.connection.close();
+            System.out.println(this.serialNum+" down.");
+        } catch (IOException ex) {
+            System.out.println(this.serialNum+" close ERROR.");
+            //Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     private void dealQuery(Object order){
@@ -102,7 +120,7 @@ public class Service implements Runnable{
             check_register((register) order);//DONE
         }
         else if(order instanceof query){
-             check_query((query) order);
+             check_query((query) order);//DONE
         }
         else if(order instanceof queryS){
              check_queryS((queryS) order);
@@ -117,10 +135,11 @@ public class Service implements Runnable{
     
     private void check_login(login order){
         String name = order.getName();
-        String pwd = encrypt(order.getPwd());
+        String pwd = order.getPwd();
         BasicDBObject user = new BasicDBObject().append("name", name);
         DBCollection users = db.getCollection("users");
         DBObject obj = users.findOne(user);
+        System.out.println(obj.get("checked"));
             try {
                 if (obj == null){
                     output.writeObject(new login(false, "NO_SUCH_USER"));   output.flush();
@@ -145,6 +164,8 @@ public class Service implements Runnable{
                     this.currentUser = user;
                     users.update(user, new BasicDBObject().append("$set", setting));
                     output.writeObject(new login(true, obj.get("money").toString()));   output.flush();
+                    
+                    System.out.println(user.get("name")+"logged on "+this.serialNum);
                 }
             } catch (IOException ex) {
                 Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
@@ -164,13 +185,13 @@ public class Service implements Runnable{
             }
             else{
                 BasicDBObject tmp = new BasicDBObject().append("name",name).append("pwd", pwd).append("credit","").append("money", "")
-                        .append("cheked", false).append("locked", false).append("wrongTimes", 0);
+                        .append("checked", false).append("locked", false).append("wrongTimes", 0);
                 users.insert(tmp);
                 output.writeObject(new register(true, ""));
             }
         }
         catch(IOException e){
-            System.exit(1);
+            this.DBShutdown();
         }
     }
     
@@ -273,7 +294,7 @@ public class Service implements Runnable{
             
         }
         catch (IOException ex) {
-                    Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     private void check_queryS(queryS order){
@@ -283,12 +304,14 @@ public class Service implements Runnable{
     private void check_logout(){
         DBCollection users = db.getCollection("users");
         users.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("checked", false)));
+        System.out.println(this.currentUser+"logged out@ "+this.serialNum);
         this.currentUser = null;
     }
     
     private void check_error(){
         try {
             output.writeObject(new String("WTF!")); output.flush();
+            System.out.println("ERROR happened on "+this.serialNum);
         } catch (IOException ex) {
             Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -296,22 +319,22 @@ public class Service implements Runnable{
 
     @Override
     public void run() {
-        this.DBConnect();
-        
         try{
             while(true){
                 Object tmp = input.readObject();
                 dealQuery(tmp);
             }
         }
-        catch (ClassNotFoundException ex) {
-            //send back: ERROR
-            //Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
+        catch (ClassNotFoundException ex) { 
+            Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        catch(java.net.SocketException e){
+            //System.out.println(this.serialNum+" down.");
+            this.DBShutdown(); 
         }
         catch(IOException e){
-            e.printStackTrace();
+            //e.printStackTrace();
             this.DBShutdown(); 
-            System.exit(1);
         }
     }
     

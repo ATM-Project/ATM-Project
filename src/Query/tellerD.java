@@ -11,7 +11,7 @@ import Query.*;
  *
  * @author MyPC
  */
-public class tellerD {
+public class tellerD implements java.io.Serializable{
     private String atmNo, ipAdd, money, currentUsr;
     
     tellerD(String no,String ip, String money, String usr){

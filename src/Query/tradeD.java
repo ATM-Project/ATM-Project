@@ -15,12 +15,12 @@ public class tradeD implements java.io.Serializable{
     //"yyyy-MM-dd HH:mm:ss"
     //public static final SimpleDateFormat dFormat = new SimpleDateFormat("yyyyMMdd");
     private String atmNo, ipAddr;
-    private String name, method, delta, remains;
+    private String name, type, delta, remains;
     private String tDate;
     
-    public tradeD(String no, String ipAddr, String name, String method, String delta, String remains, String date){
+    public tradeD(String no, String ipAddr, String name, String type, String delta, String remains, String date){
         this.atmNo = no;    this.ipAddr = ipAddr;   
-        this.name = name; this.method = method;   this.delta = delta;   this.remains = remains;
+        this.name = name; this.type = type;   this.delta = delta;   this.remains = remains;
         this.tDate = date;  
     }
     
@@ -30,8 +30,11 @@ public class tradeD implements java.io.Serializable{
     public String getNo(){
         return this.atmNo;
     }
+    public String getName(){
+        return this.name;
+    }
     public String getMethod(){
-        return this.method;
+        return this.type;
     }
     public String getDelta(){
         return this.delta;

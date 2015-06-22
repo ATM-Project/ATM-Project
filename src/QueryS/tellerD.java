@@ -15,7 +15,7 @@ import Query.*;
 public class tellerD implements java.io.Serializable{
     private String atmNo, ipAdd, money, currentUsr;
     
-    tellerD(String no,String ip, String money, String usr){
+    public tellerD(String no,String ip, String money, String usr){
         this.atmNo = no;
         this.ipAdd = ip;
         this.money = money;

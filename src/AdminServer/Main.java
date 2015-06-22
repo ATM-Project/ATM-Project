@@ -6,7 +6,6 @@
 package AdminServer;
 
 import Query.query;
-import Server.Service;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;

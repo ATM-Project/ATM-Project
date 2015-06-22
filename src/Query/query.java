@@ -25,7 +25,7 @@ public class query implements java.io.Serializable{
     
     public query(method type){
         this.type = method.LOOKUP;
-        this.amount = "null";
+        this.amount = null;
     }
     
     public query(method type, String num){

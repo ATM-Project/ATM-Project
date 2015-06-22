@@ -5,6 +5,7 @@
  */
 package AdminServer;
 
+import Query.query;
 import java.net.UnknownHostException;
 import com.mongodb.DBObject;
 import com.mongodb.BasicDBObject;
@@ -22,12 +23,11 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import Query.*;
-import Query.query.method;
+import QueryS.*;
+import QueryS.queryS.methodS;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import static security.Security.encrypt;
 
 /**
  *
@@ -41,6 +41,7 @@ public class ServiceS implements Runnable{
     
     private Mongo mongo = null;
     private DB db = null;
+    private DBCollection admins=null, users=null, records=null, clients=null;
     
     private SimpleDateFormat formatter = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss z"); 
     
@@ -54,8 +55,6 @@ public class ServiceS implements Runnable{
         this.ipAddr = socket.getInetAddress().getHostAddress();
         myClient = new BasicDBObject().append("ipAddr", ipAddr);
         this.DBConnect();
-        this.addClient();
-        System.out.println(this.serialNum+" on.");
         try{
             //connection.setSoTimeout(30000);
             input = new ObjectInputStream(socket.getInputStream());
@@ -66,29 +65,15 @@ public class ServiceS implements Runnable{
             this.DBShutdown();
         }
     }
-        
-    private void addClient(){
-        try{
-            DBCollection client = db.getCollection("clients");
-            DBObject obj = client.findOne(new BasicDBObject().append("ipAddr", this.ipAddr));
-            if (obj == null){
-                BasicDBObject newObj = new BasicDBObject().append("ipAddr", this.ipAddr).append("SerialNum", this.serialNum).
-                                        append("money", encrypt("100000")).append("currentUser", "null");
-                client.insert(newObj);
-            }
-            else{
-                this.serialNum = obj.get("SerialNum").toString();
-            }
-        }
-        catch(java.lang.NullPointerException e){
-            e.printStackTrace();
-        }
-    }
     
     private void DBConnect(){
         try{
             mongo = new Mongo(new ServerAddress("",27017));
             db = mongo.getDB("bank");
+            admins = db.getCollection("admins");
+            users = db.getCollection("users");
+            clients = db.getCollection("clients");
+            records = db.getCollection("records");
         }
         catch (UnknownHostException e) {
             e.printStackTrace();
@@ -100,6 +85,7 @@ public class ServiceS implements Runnable{
     private void DBShutdown(){
         mongo.close();
         try {
+            check_logout();
             this.connection.close();
             System.out.println("Client "+this.serialNum+" down.");
         } catch (IOException ex) {
@@ -108,10 +94,177 @@ public class ServiceS implements Runnable{
         }
     }
     
+    private void dealQuery(Object order){
+        if (order instanceof LoginS){
+            check_login((LoginS) order);//DONE
+        }
+        else if(order instanceof queryS){
+             check_query((queryS) order);//DONE
+        }
+        else if(order instanceof LogoutS){
+            check_logout();//DONE
+        }
+        else {
+            check_error();//DONE
+        }
+    }
+    
+    private ArrayList getData(DBCollection collection, methodS type, String name){
+        ArrayList data = new ArrayList<>();
+        String tmp;
+        if (type == methodS.USER)
+            tmp = "name";
+        else tmp = "ipAddr";
+        DBCursor cursor = collection.find(new BasicDBObject(tmp, name));
+        
+        if (type == methodS.ATM){
+            while(cursor.hasNext()){
+                DBObject obj = cursor.next();
+                String no = obj.get("SerialNum").toString();    String ip = obj.get("ipAddr").toString();
+                String money = obj.get("money").toString();     String usr = obj.get("currentUser").toString();
+                data.add(new tellerD(no, ip, money, usr));
+            }
+        }
+        else if (type == methodS.USER){
+            while(cursor.hasNext()){
+                DBObject obj = cursor.next();
+                String usr = obj.get("name").toString();    boolean ip = (boolean)obj.get("locked");
+                data.add(new userD(usr, ip));
+            }
+        }
+        else if (type == methodS.TRADE){
+            while(cursor.hasNext()){
+                DBObject obj = cursor.next();
+                String no = obj.get("serial").toString();    String ip = obj.get("ipAddr").toString();
+                String method = obj.get("type").toString();     String usr = obj.get("currentUser").toString();
+                String delta = obj.get("delta").toString();     String remains = obj.get("remains").toString();
+                String date = obj.get("time").toString();       
+                data.add(new tradeD(no, ip, usr, method, delta, remains, date));
+            }
+        }
+        
+        return data;
+    }
+    
+    private void check_query(queryS order){
+        try{
+            if (order.type == methodS.UNLOCK){
+                BasicDBObject user = new BasicDBObject().append("name",order.getName());
+                DBObject obj = users.findOne(user);
+                if (obj==null||(!(boolean)obj.get("locked"))) {
+                    output.writeObject(new queryS(false, "WTF!")); output.flush();
+                }
+                else{
+                    users.update(user, new BasicDBObject().append("$set", new BasicDBObject().append("locked", false)));
+                    output.writeObject(new queryS(true, "UNLOCKED")); output.flush();
+                }
+            }
+            
+            else if (order.type == methodS.RESET){
+                DBObject admin = admins.findOne(currentUser);
+                String pwd = admin.get("pwd").toString();
+                if (order.getPwd0().equals(pwd)&&(order.getPwd1()!=null)){
+                    admins.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("pwd", order.getPwd1())));
+                    output.writeObject(new queryS(true, "Success")); output.flush();
+                }
+                else{
+                    output.writeObject(new queryS(false, "wrongPwd")); output.flush();
+                }
+            }
+            
+            
+            else if (order.type == methodS.UPDATE){
+                
+            }
+            
+            
+            else{
+                if (order.type == methodS.ATM){
+                    ArrayList<tellerD> tmp = getData(clients ,order.type, order.getName());
+                }
+                else if (order.type == methodS.USER){
+                    ArrayList tmp = getData(users ,order.type, order.getName());
+                }
+                else if (order.type == methodS.TRADE){
+                    ArrayList<tradeD> tmp = getData(records ,order.type, order.getName());
+                }
+            }
+        }
+        catch(IOException ex){
+            Logger.getLogger(ServiceS.class.getName()).log(Level.SEVERE, null, ex);
+            this.DBShutdown();
+        }
+    }
+    
+    private void check_login(LoginS order){
+        String name = order.getName();
+        String pwd = order.getPwd();
+        BasicDBObject user = new BasicDBObject().append("name", name);
+        DBObject obj = admins.findOne(user);
+        
+            try {
+                if (obj == null){
+                    output.writeObject(new LoginS(false, "NO_SUCH_USER"));   output.flush();
+                }
+                else if((boolean)obj.get("checked")){
+                    output.writeObject(new LoginS(false, "USER_CHECKED"));   output.flush();
+                }
+                else if ((boolean)obj.get("locked")){
+                    output.writeObject(new LoginS(false, "USER_LOCKED"));   output.flush();
+                }
+                else if (!pwd.equals(obj.get("pwd").toString())){
+                    output.writeObject(new LoginS(false, "WRONG_PASSWORD"));   output.flush();      
+                }
+                else{                   
+                    BasicDBObject setting = new BasicDBObject().append("checked", true)
+                                                    .append("Last_Time", this.formatter.format(new Date()));
+                    this.currentUser = user;
+                    admins.update(user, new BasicDBObject().append("$set", setting));
+                    
+                    output.writeObject(new LoginS(true, obj.get("Last_Time").toString()));   output.flush();                
+                    System.out.println(user.get("name")+" logs @"+this.serialNum);
+                }
+            } catch (IOException ex) {
+                Logger.getLogger(ServiceS.class.getName()).log(Level.SEVERE, null, ex);
+            }
+    }
+    
+    private void check_logout(){
+        if (currentUser != null){
+            admins.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("checked", false)));
+            System.out.println(this.currentUser+" logged out @"+this.serialNum);
+            this.currentUser = null;
+        }
+    }
+    
+    private void check_error(){
+        try {
+            output.writeObject(new String("WTF!")); output.flush();
+            System.out.println("ERROR happened on "+this.serialNum);
+        } catch (IOException ex) {
+            Logger.getLogger(ServiceS.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 
     
     @Override
     public void run(){
-        
+        try{
+            while(true){
+                Object tmp = input.readObject();
+                dealQuery(tmp);
+            }
+        }
+        catch (ClassNotFoundException ex) { 
+            Logger.getLogger(ServiceS.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        catch(java.net.SocketException e){
+            //System.out.println(this.serialNum+" down.");
+            this.DBShutdown(); 
+        }
+        catch(IOException e){
+            //e.printStackTrace();
+            this.DBShutdown(); 
+        }
     }
 }

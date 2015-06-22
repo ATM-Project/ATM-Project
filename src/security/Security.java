@@ -97,8 +97,8 @@ public class Security {
 	    return "";
 	}
         
-        public static void main(String[] args){
-            String str = encrypt("960311");
-            System.out.println(encrypt("admin"));
-        }
+//        public static void main(String[] args){
+//            String str = encrypt("960311");
+//            System.out.println(encrypt("admin"));
+//        }
 }

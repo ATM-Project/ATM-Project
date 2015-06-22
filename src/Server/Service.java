@@ -83,7 +83,7 @@ public class Service implements Runnable{
             }
         }
         catch(java.lang.NullPointerException e){
-            e.printStackTrace();
+            this.DBShutdown();
         }
     }
     
@@ -92,11 +92,9 @@ public class Service implements Runnable{
             mongo = new Mongo(new ServerAddress("",27017));
             db = mongo.getDB("bank");
         }
-        catch (UnknownHostException e) {
-            e.printStackTrace();
-            }catch (MongoException e) {
-            e.printStackTrace();
-            }
+        catch (UnknownHostException | MongoException e) {
+            this.DBShutdown();
+        }
     }
     
     private void DBShutdown(){
@@ -217,8 +215,14 @@ public class Service implements Runnable{
         try{
             Date time = new Date();
             double money = 0;
-            if (!order.getAmount().equals("null"))
+            try{
+            if ((order.getAmount() != null)&&(!order.getAmount().equals("")))
                 money = Double.parseDouble(new String(decrypty(order.getAmount())));
+            }
+            catch(NumberFormatException e){
+                output.writeObject(new query(false, "INVALID")); output.flush();
+                return;
+            }
         
             DBCollection users = db.getCollection("users");
             DBCollection clients = db.getCollection("clients");
@@ -247,7 +251,7 @@ public class Service implements Runnable{
                     clients.update(new BasicDBObject().append("ipAddr", ipAddr), 
                                     new BasicDBObject().append("$set", new BasicDBObject().append("money", client_money_tmp)));
                 
-                    output.writeObject(new query(true,"")); output.flush();
+                    output.writeObject(new query(true,user_money_tmp)); output.flush();
                 }
             }
             
@@ -267,7 +271,7 @@ public class Service implements Runnable{
                     clients.update(new BasicDBObject().append("ipAddr", ipAddr), 
                                     new BasicDBObject().append("$set", new BasicDBObject().append("money", client_money_tmp)));
                 
-                    output.writeObject(new query(true,"")); output.flush();
+                    output.writeObject(new query(true,user_money_tmp)); output.flush();
                 }
             }
             
@@ -303,7 +307,7 @@ public class Service implements Runnable{
                         clients.update(new BasicDBObject().append("ipAddr", ipAddr), 
                                     new BasicDBObject().append("$set", new BasicDBObject().append("money", client_money_tmp)));
                     
-                        output.writeObject(new query(true,"")); output.flush();
+                        output.writeObject(new query(true,user_money_tmp)); output.flush();
                     }
                 }
             }
@@ -311,7 +315,7 @@ public class Service implements Runnable{
             
             else if (order.type == method.LOOKUP){
                 DBCursor cursor = records.find(userQ);
-                ArrayList<tradeD> details = new ArrayList<tradeD>();
+                ArrayList<tradeD> details = new ArrayList<>();
                 while(cursor.hasNext()){
                     DBObject tmp = cursor.next();
                     tradeD obj = new tradeD(tmp.get("serial").toString(), tmp.get("ipAddr").toString(), tmp.get("name").toString(),
@@ -357,7 +361,7 @@ public class Service implements Runnable{
     
     private void check_error(){
         try {
-            output.writeObject(new String("WTF!")); output.flush();
+            output.writeObject("WTF!"); output.flush();
             System.out.println("ERROR happened on "+this.serialNum);
         } catch (IOException ex) {
             Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);

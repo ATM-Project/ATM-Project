@@ -24,8 +24,6 @@ import java.util.logging.Logger;
 
 import Query.*;
 import Query.query.method;
-import Query.queryS.methodS;
-import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -125,9 +123,6 @@ public class Service implements Runnable{
         else if(order instanceof query){
              check_query((query) order);//DONE
         }
-        else if(order instanceof queryS){
-             check_queryS((queryS) order);
-        }
         else if(order instanceof Logout){
             check_logout();//DONE
         }
@@ -220,10 +215,10 @@ public class Service implements Runnable{
         
         
         try{
-            query data = order; Date time = new Date();
+            Date time = new Date();
             double money = 0;
-            if (!data.getAmount().equals("null"))
-                money = Double.parseDouble(new String(decrypty(data.getAmount())));
+            if (!order.getAmount().equals("null"))
+                money = Double.parseDouble(new String(decrypty(order.getAmount())));
         
             DBCollection users = db.getCollection("users");
             DBCollection clients = db.getCollection("clients");
@@ -235,7 +230,7 @@ public class Service implements Runnable{
             DBObject client = clients.findOne(clientQ);
             
             //DEAL THE QUERY PART
-            if (data.type == method.WITHDRAW){
+            if (order.type == method.WITHDRAW){
                 double user_money = Double.parseDouble(new String(decrypty(user.get("money").toString())));
                 double client_money = Double.parseDouble(new String(decrypty(client.get("money").toString())));
                 user_money -= money;    client_money -= money;
@@ -257,7 +252,7 @@ public class Service implements Runnable{
             }
             
             
-            else if (data.type == method.DEPOSIT){
+            else if (order.type == method.DEPOSIT){
                 double user_money = Double.parseDouble(new String(decrypty(user.get("money").toString())));
                 double client_money = Double.parseDouble(new String(decrypty(client.get("money").toString())));
                 user_money += money;    client_money += money;
@@ -278,8 +273,8 @@ public class Service implements Runnable{
             
             
             
-            else if (data.type == method.TRANSFORM){
-                BasicDBObject targetQ = new BasicDBObject().append("name", data.getTarget());
+            else if (order.type == method.TRANSFORM){
+                BasicDBObject targetQ = new BasicDBObject().append("name", order.getTarget());
                 DBObject target = users.findOne(targetQ);
                 if (target == null){
                     output.writeObject(new query(false, "NO_SUCH_USER")); output.flush();
@@ -314,7 +309,7 @@ public class Service implements Runnable{
             }
             
             
-            else if (data.type == method.LOOKUP){
+            else if (order.type == method.LOOKUP){
                 DBCursor cursor = records.find(userQ);
                 ArrayList<tradeD> details = new ArrayList<tradeD>();
                 while(cursor.hasNext()){
@@ -327,6 +322,17 @@ public class Service implements Runnable{
                 output.writeObject(new query(true, "", details));   output.flush();
             }
             
+            else if (order.type == method.RESET){
+                String pwd = user.get("pwd").toString();
+                if (order.getPwd0().equals(pwd)&&(order.getPwd1()!=null)){
+                    users.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("pwd", order.getPwd1())));
+                    output.writeObject(new query(true, "Success")); output.flush();
+                }
+                else{
+                    output.writeObject(new query(false, "wrongPwd")); output.flush();
+                }
+            }
+            
         }
         catch(java.lang.NullPointerException ex){
             Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
@@ -336,9 +342,6 @@ public class Service implements Runnable{
             this.DBShutdown();
             Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-    private void check_queryS(queryS order){
-        
     }
     
     private void check_logout(){

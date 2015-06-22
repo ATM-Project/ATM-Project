@@ -12,11 +12,12 @@ import java.util.ArrayList;
  * @author MyPC
  */
 public class query implements java.io.Serializable{
-    public enum method{DEPOSIT, WITHDRAW, TRANSFORM, LOOKUP};
+    public enum method{DEPOSIT, WITHDRAW, TRANSFORM, LOOKUP, RESET};
     public method type;
     
     private boolean status;
     private String msg;
+    private String pwd0, pwd1;
     
     private String amount;
     private String target;
@@ -33,9 +34,16 @@ public class query implements java.io.Serializable{
     }
     
     public query(method type, String num, String target){
-        this.type = method.TRANSFORM;
-        this.amount = num;
-        this.target = target;
+        if (type == method.RESET){
+            this.type = method.RESET;
+            this.pwd0 = num;
+            this.pwd1 = target;
+        }
+        else{
+            this.type = method.TRANSFORM;
+            this.amount = num;
+            this.target = target;
+        }
     }
     
     
@@ -62,6 +70,12 @@ public class query implements java.io.Serializable{
     }
     public String getTarget(){
         return this.target;
+    }
+    public String getPwd0(){
+        return this.pwd0;
+    }
+     public String getPwd1(){
+        return this.pwd1;
     }
     public ArrayList<tradeD> getDetail(){
         return this.detail;

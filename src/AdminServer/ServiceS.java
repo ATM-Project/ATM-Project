@@ -179,15 +179,17 @@ public class ServiceS implements Runnable{
             
             
             else{
+                ArrayList tmp = new ArrayList<>();
                 if (order.type == methodS.ATM){
-                    ArrayList<tellerD> tmp = getData(clients ,order.type, order.getName());
+                    tmp = (ArrayList<tellerD>)getData(clients ,order.type, order.getName());
                 }
                 else if (order.type == methodS.USER){
-                    ArrayList tmp = getData(users ,order.type, order.getName());
+                    tmp = (ArrayList<userD>)getData(users ,order.type, order.getName());
                 }
                 else if (order.type == methodS.TRADE){
-                    ArrayList<tradeD> tmp = getData(records ,order.type, order.getName());
+                    tmp = (ArrayList<tradeD>)getData(records ,order.type, order.getName());
                 }
+                output.writeObject(new queryS(true, order.type, tmp)); output.flush();
             }
         }
         catch(IOException ex){

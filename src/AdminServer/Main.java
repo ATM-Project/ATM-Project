@@ -5,7 +5,6 @@
  */
 package AdminServer;
 
-import Query.query;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -89,7 +88,7 @@ public class Main{
                 else{
                     System.out.println("MultiConnection Denied");
                     ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-                    output.writeObject(new query(false, "RUNTIME_ERROR"));   output.flush();
+                    output.writeObject("RUNTIME_ERROR");   output.flush();
                     socket.close();   
                 }
                 

@@ -42,7 +42,7 @@ public class contactEditorUI extends javax.swing.JFrame{
     
     double curentUserMoney;
 JTextField currentTextField=null;
-static String ipAddress="192.168.1.101";
+static String ipAddress="127.0.0.1";
 static int portNumber=4242;
 
 

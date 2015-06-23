@@ -5,7 +5,6 @@
  */
 package AdminServer;
 
-import Query.query;
 import java.net.UnknownHostException;
 import com.mongodb.DBObject;
 import com.mongodb.BasicDBObject;

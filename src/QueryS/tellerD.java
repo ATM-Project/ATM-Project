@@ -4,10 +4,6 @@
  * and open the template in the editor.
  */
 package QueryS;
-
-import Query.*;
-import Query.*;
-
 /**
  *
  * @author MyPC

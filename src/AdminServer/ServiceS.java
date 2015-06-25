@@ -33,6 +33,7 @@ import java.util.Date;
  * @author MyPC
  */
 public class ServiceS implements Runnable{
+    private HeartBeat abS;
     private Socket connection;
     private String ipAddr, serialNum;
     private ObjectInputStream input;
@@ -47,7 +48,8 @@ public class ServiceS implements Runnable{
     private BasicDBObject currentUser = null;
     private static BasicDBObject myClient;
     
-        ServiceS(Socket socket, String serialNum){
+    ServiceS(Socket socket, String serialNum){
+        this.abS = new HeartBeat(socket, 2000);
         //System.out.println(socket);
         this.connection = socket;
         this.serialNum = serialNum;      
@@ -82,6 +84,7 @@ public class ServiceS implements Runnable{
     }
     
     private void DBShutdown(){
+        this.abS.stop();
         mongo.close();
         try {
             check_logout();

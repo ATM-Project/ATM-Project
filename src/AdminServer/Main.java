@@ -5,6 +5,7 @@
  */
 package AdminServer;
 
+import QueryS.queryS;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,7 +26,7 @@ import java.util.logging.Logger;
  */
 public class Main{
     
-    private static final int port = 4242;
+    private static final int port = 8008;
     private static final int maxLink = 10;
     
     private static FileOutputStream fout;
@@ -42,14 +43,14 @@ public class Main{
         return true;
     }
     
-    private static void initLogFile(){
-        SimpleDateFormat formatter = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss z");
-        try {
-            fout = new FileOutputStream(formatter.format(new Date())+".log");
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+//    private static void initLogFile(){
+//        SimpleDateFormat formatter = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss z");
+//        try {
+//            fout = new FileOutputStream(formatter.format(new Date())+".log");
+//        } catch (FileNotFoundException ex) {
+//            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
     
     private static String zeroFill(int num){
         String tmp = String.valueOf(num);
@@ -88,7 +89,7 @@ public class Main{
                 else{
                     System.out.println("MultiConnection Denied");
                     ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-                    output.writeObject("RUNTIME_ERROR");   output.flush();
+                    output.writeObject( "RUNTIME_ERROR");   output.flush();
                     socket.close();   
                 }
                 

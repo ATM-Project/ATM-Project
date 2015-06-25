@@ -36,6 +36,7 @@ import static security.Security.decrypty;
  * @author MyPC
  */
 public class Service implements Runnable{
+    private HeartBeat ab;
     private Socket connection;
     private String ipAddr, serialNum;
     private ObjectInputStream input;
@@ -51,6 +52,7 @@ public class Service implements Runnable{
     
     Service(Socket socket, String serialNum){
         //System.out.println(socket);
+        this.ab = new HeartBeat(socket, 2000);
         this.connection = socket;
         this.serialNum = serialNum;      
         this.ipAddr = socket.getInetAddress().getHostAddress();
@@ -98,6 +100,7 @@ public class Service implements Runnable{
     }
     
     private void DBShutdown(){
+        ab.stop();
         check_logout();
         mongo.close();
         try {

@@ -9,7 +9,7 @@ package QueryS;
  *
  * @author MyPC
  */
-public class LoginS {
+public class LoginS implements java.io.Serializable{
     private String name, pwd;
     
     private boolean status;

@@ -46,15 +46,13 @@ public class ServiceS implements Runnable{
     private SimpleDateFormat formatter = new SimpleDateFormat ("yyyy-MM-dd HH:mm:ss z"); 
     
     private BasicDBObject currentUser = null;
-    private static BasicDBObject myClient;
     
     ServiceS(Socket socket, String serialNum){
-        this.abS = new HeartBeat(socket, 2000);
+        //this.abS = new HeartBeat(socket, 2000);
         //System.out.println(socket);
         this.connection = socket;
         this.serialNum = serialNum;      
         this.ipAddr = socket.getInetAddress().getHostAddress();
-        myClient = new BasicDBObject().append("ipAddr", ipAddr);
         this.DBConnect();
         try{
             //connection.setSoTimeout(30000);
@@ -84,12 +82,12 @@ public class ServiceS implements Runnable{
     }
     
     private void DBShutdown(){
-        this.abS.stop();
+        //this.abS.stop();
+        check_logout();
         mongo.close();
-        try {
-            check_logout();
+        try {  
             this.connection.close();
-            System.out.println("Client "+this.serialNum+" down.");
+            System.out.println("Link "+this.serialNum+" down.");
         } catch (IOException ex) {
             System.out.println(this.serialNum+" close ERROR.");
             //Logger.getLogger(Service.class.getName()).log(Level.SEVERE, null, ex);
@@ -113,13 +111,11 @@ public class ServiceS implements Runnable{
     
     private ArrayList getData(DBCollection collection, methodS type, String name){
         ArrayList data = new ArrayList<>();
-        String tmp;
-        if (type == methodS.USER)
-            tmp = "name";
-        else tmp = "ipAddr";
-        DBCursor cursor = collection.find(new BasicDBObject(tmp, name));
+        DBCursor cursor;
+        
         
         if (type == methodS.ATM){
+            cursor = collection.find();
             while(cursor.hasNext()){
                 DBObject obj = cursor.next();
                 String no = obj.get("SerialNum").toString();    String ip = obj.get("ipAddr").toString();
@@ -128,6 +124,7 @@ public class ServiceS implements Runnable{
             }
         }
         else if (type == methodS.USER){
+            cursor = collection.find(new BasicDBObject("name", name));
             while(cursor.hasNext()){
                 DBObject obj = cursor.next();
                 String usr = obj.get("name").toString();    boolean ip = (boolean)obj.get("locked");
@@ -135,16 +132,16 @@ public class ServiceS implements Runnable{
             }
         }
         else if (type == methodS.TRADE){
+            cursor = collection.find(new BasicDBObject("ipAddr", name));
             while(cursor.hasNext()){
                 DBObject obj = cursor.next();
                 String no = obj.get("serial").toString();    String ip = obj.get("ipAddr").toString();
-                String method = obj.get("type").toString();     String usr = obj.get("currentUser").toString();
+                String method = obj.get("type").toString();     String usr = obj.get("name").toString();
                 String delta = obj.get("delta").toString();     String remains = obj.get("remains").toString();
                 String date = obj.get("time").toString();       
                 data.add(new tradeD(no, ip, usr, method, delta, remains, date));
             }
         }
-        
         return data;
     }
     
@@ -191,7 +188,14 @@ public class ServiceS implements Runnable{
                 else if (order.type == methodS.TRADE){
                     tmp = (ArrayList<tradeD>)getData(records ,order.type, order.getName());
                 }
-                output.writeObject(new queryS(true, order.type, tmp)); output.flush();
+                
+                if (tmp.isEmpty()){
+                    output.writeObject(new queryS(false, order.type, null)); output.flush();
+                }
+                else{
+                    output.writeObject(new queryS(true, order.type, tmp)); output.flush();
+                }
+                
             }
         }
         catch(IOException ex){
@@ -236,7 +240,8 @@ public class ServiceS implements Runnable{
     private void check_logout(){
         if (currentUser != null){
             admins.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("checked", false)));
-            System.out.println(this.currentUser+" logged out @"+this.serialNum);
+            admins.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("checked", false)));
+            System.out.println(this.currentUser.get("name").toString()+" logged out @"+this.serialNum);
             this.currentUser = null;
         }
     }

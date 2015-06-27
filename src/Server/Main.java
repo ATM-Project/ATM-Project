@@ -11,7 +11,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.util.ArrayList;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -35,7 +34,7 @@ public class Main{
     private static FileOutputStream fout;
     
     
-    private static ArrayList<Socket> linkPool = new ArrayList<Socket>();
+    private static final ArrayList<Socket> linkPool = new ArrayList<>();
     
     private static boolean judge(Socket socket){
         String addr  = socket.getInetAddress().getHostAddress();
@@ -74,7 +73,7 @@ public class Main{
             server = new ServerSocket(port, maxLink);
         }
         catch(IOException e){
-            e.printStackTrace();
+            //e.printStackTrace();
             System.exit(1);
         }
         System.out.println("Server Start.");

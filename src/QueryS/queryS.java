@@ -22,6 +22,7 @@ public class queryS implements java.io.Serializable{
     private String message;
     private ArrayList<tellerD> tellerList;
     private ArrayList<tradeD> tradeList;
+    private ArrayList<userD> userList;
     
     public queryS(methodS type){
         this.type = type;
@@ -54,6 +55,9 @@ public class queryS implements java.io.Serializable{
         else if (type == methodS.TRADE){
             this.tradeList = arr;
         }
+        else if (type == methodS.USER) {
+            this.userList = arr;
+        }
     }
     
     public boolean getStatus(){
@@ -80,5 +84,7 @@ public class queryS implements java.io.Serializable{
     public ArrayList<tradeD> getTrade(){
         return this.tradeList;
     }
-    
+    public ArrayList<userD> getUser(){
+        return this.userList;
+    }
 }

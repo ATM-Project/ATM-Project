@@ -36,8 +36,9 @@ public class HeartBeat{
             public void run() {  
                 try {
                     // TODO Auto-generated method stub
-                    if (!socket.isClosed())
-                        socket.sendUrgentData(0xFF);
+                        if (socket.getInputStream().available()==0){
+                            throw new IOException();
+                        }
                 } catch (IOException ex) {
                     try {
                         socket.close();
@@ -48,7 +49,7 @@ public class HeartBeat{
                 }
             }  
         };  
-        heartBeatTimer.schedule(heartBeatTask, timeSet);  
+        heartBeatTimer.schedule(heartBeatTask, 0, timeSet);  
     }
     
     public void stop(){

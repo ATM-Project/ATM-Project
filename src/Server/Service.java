@@ -52,9 +52,7 @@ public class Service implements Runnable{
     
     Service(Socket socket, String serialNum){
         //System.out.println(socket);
-        this.ab = new HeartBeat(socket, 2000);
-        this.connection = socket;
-        this.serialNum = serialNum;      
+        this.connection = socket;     
         this.ipAddr = socket.getInetAddress().getHostAddress();
         myClient = new BasicDBObject().append("ipAddr", ipAddr);
         this.DBConnect();
@@ -64,6 +62,8 @@ public class Service implements Runnable{
             //connection.setSoTimeout(30000);
             input = new ObjectInputStream(socket.getInputStream());
             output = new ObjectOutputStream(socket.getOutputStream());
+            socket.setOOBInline(false);
+            //this.ab = new HeartBeat(socket, 2000);
         }
         catch(IOException e){
             //e.printStackTrace();
@@ -71,14 +71,24 @@ public class Service implements Runnable{
         }
     }
     
+    private static String zeroFill(int num){
+        String tmp = String.valueOf(num);
+        while(tmp.length() < 4){
+            tmp = "0" + tmp;
+        }
+        return tmp;
+    }
+    
     private void addClient(){
         try{
-            DBCollection client = db.getCollection("clients");
-            DBObject obj = client.findOne(new BasicDBObject().append("ipAddr", this.ipAddr));
+            DBCollection clients = db.getCollection("clients");
+            DBObject obj = clients.findOne(new BasicDBObject().append("ipAddr", this.ipAddr));
+            String count = zeroFill(clients.find().count());
             if (obj == null){
-                BasicDBObject newObj = new BasicDBObject().append("ipAddr", this.ipAddr).append("SerialNum", this.serialNum).
-                                        append("money", encrypt("100000")).append("currentUser", "null");
-                client.insert(newObj);
+                BasicDBObject newObj = new BasicDBObject().append("ipAddr", this.ipAddr).append("SerialNum", count).
+                                        append("money", encrypt("100000")).append("currentUser", "'null'");
+                this.serialNum = count;
+                clients.insert(newObj);
             }
             else{
                 this.serialNum = obj.get("SerialNum").toString();
@@ -100,7 +110,7 @@ public class Service implements Runnable{
     }
     
     private void DBShutdown(){
-        ab.stop();
+        //ab.stop();
         check_logout();
         mongo.close();
         try {
@@ -357,7 +367,7 @@ public class Service implements Runnable{
             users.update(currentUser, new BasicDBObject().append("$set", new BasicDBObject().append("checked", false)));
             DBCollection clients = db.getCollection("clients");
             clients.update(myClient, new BasicDBObject().append("$set", new BasicDBObject().append("currentUser", null)));
-            System.out.println(this.currentUser+" logged out @"+this.serialNum);
+            System.out.println(this.currentUser.get("name").toString()+" logged out @"+this.serialNum);
             this.currentUser = null;
         }
     }

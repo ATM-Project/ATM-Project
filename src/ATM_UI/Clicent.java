@@ -6,6 +6,7 @@
 package ATM_UI;
 
 import Query.*;
+import QueryS.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -13,6 +14,8 @@ import java.net.SocketException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.management.Query;
+import server_UI.login_ui;
+import server_UI.servers_UI;
 
 /**
  *
@@ -21,7 +24,7 @@ import javax.management.Query;
 public class Clicent {
    public static ObjectOutputStream output;
    public static ObjectInputStream input;
-   private static Socket Clicent;
+   public static Socket Clicent =null;
 
 public void runClicent(){
 try{
@@ -36,17 +39,18 @@ finally{
 }
 }
 
-   static void connectToSever(String ipaddress,int queue)throws IOException {
+  public  static void connectToSever(String ipaddress,int queue)throws IOException {
         System.out.println("Attempting connection");
         Clicent=new Socket(ipaddress,queue);
         System.out.println(Clicent.getInetAddress().getHostAddress());
+        Clicent.setOOBInline(false);
     }
-    static void getStreams() throws IOException{
+   public static void getStreams() throws IOException{
     output=new ObjectOutputStream(Clicent.getOutputStream());
     output.flush();
     input=new ObjectInputStream(Clicent.getInputStream());
     }
-    static void closeConnection(){
+ public   static void closeConnection(){
         try{
         output.close();
         input.close();
@@ -54,26 +58,31 @@ finally{
         }catch(IOException e){
         e.printStackTrace();}
     }
-    static void SendData(String message){
+  static void SendData(String message){
         try{
         output.writeObject(message);
         output.flush();
         }catch(IOException e){
         System.err.println("Error writing object");}
     }
-static void SendData(Object b){
+ public static void SendData(Object b){
        try {
+ //          if(b instanceof Query)
+//           contactEditorUI.setEnable(false);
            output.writeObject(b);
            output.flush();
-       }catch(SocketException e){
+//       } catch(NullPointerException e){
+//           showMessage.showmessage("未连接服务器");
        } catch (IOException ex) {
            Logger.getLogger(Clicent.class.getName()).log(Level.SEVERE, null, ex);
        }
 }
-static Object ReceiveData(){
+public static Object ReceiveData(){
     Object obj=null;
        try {
            obj = input.readObject();
+ //          if(obj instanceof Query)
+ //          contactEditorUI.setEnable(true);
        }catch(EOFException e){
        showMessage.showmessage("与服务器断开连接");
        } catch(SocketException e){
